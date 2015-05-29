@@ -18,6 +18,7 @@ public:
             const uint shapeType,
             const double size);
   void updatePose(const geometry_msgs::Pose start_pose);
+  void applyRndPose();
 
   std::string name;
   ros::Time timestamp;

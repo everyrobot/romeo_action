@@ -1,5 +1,6 @@
 #include <romeo_pick_place/metablock.hpp>
 #include <Eigen/Eigen>
+#include <stdlib.h>
 
 MetaBlock::MetaBlock(const std::string name,
           const double start_x,
@@ -65,7 +66,11 @@ MetaBlock::MetaBlock(const std::string name,
 {
   this->name = name;
   this->timestamp = timestamp;
+
   this->start_pose = start_pose;
+  this->start_pose.position.x = 0.5;//0.47; //0.5;//
+  this->start_pose.position.z = -0.13;//-0.11; //-0.13;//
+
   this->goal_pose = start_pose;
   this->goal_pose.position.y = 0.14;
   //std::cout << "MetaBlock:: detected " << this->start_pose.position << std::endl;
@@ -95,7 +100,23 @@ MetaBlock::MetaBlock(const std::string name,
 void MetaBlock::updatePose(const geometry_msgs::Pose start_pose)
 {
   this->start_pose = start_pose;
+  this->start_pose.position.x = 0.5;//0.47; //0.5;//
+  this->start_pose.position.z = -0.13;//-0.11; //-0.13;//
+
   this->goal_pose = start_pose;
   this->goal_pose.position.y -= 0.06;
   //std::cout << "MetaBlock:: detected " << this->start_pose.position << std::endl;
 }
+
+void MetaBlock::applyRndPose()
+{
+  this->start_pose.position.x = 0.35f + float(rand() % 150)/1000.0f; //0.5;
+  this->start_pose.position.y = float(rand() % 50) /100.0f;
+  this->start_pose.position.z = -0.23f + (float(rand() % 250)/1000.0f); //-0.13;
+
+  this->goal_pose.position.x = 0.5;
+  this->goal_pose.position.y = 0.25;
+  this->goal_pose.position.z = -0.13;
+  //std::cout << "MetaBlock:: detected " << this->start_pose.position << std::endl;
+}
+

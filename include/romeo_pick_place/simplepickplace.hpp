@@ -11,7 +11,7 @@
 #include <moveit/robot_model/robot_model.h>*/
 
 #include <romeo_pick_place/metablock.hpp>
-#include <romeo_pick_place/actions.hpp>
+#include <romeo_pick_place/action.hpp>
 
 namespace romeo_pick_place
 {
@@ -34,9 +34,9 @@ public:
   void cleanObjects();
 
   // A shared node handle
-  ros::NodeHandle *nh_;
+  ros::NodeHandle nh_;
 
-  Actions action;
+  Action *action;
 
   // Show more visual and console output, with general slower run time.
   const bool verbose_;
@@ -48,26 +48,12 @@ public:
 
   ros::Subscriber sub_obj_coll;
   ros::Publisher pub_obj_pose, pub_obj_poses;
-  geometry_msgs::PoseStamped msg_obj_pose; //, msg_obj_ork_;
+  geometry_msgs::PoseStamped msg_obj_pose;
   geometry_msgs::PoseArray msg_obj_poses;
   //ros::ServiceClient planning_scene_service_;
 
   std::vector<geometry_msgs::Pose> poses_validated;
   std::vector<geometry_msgs::Pose> poses_failed;
-
-  //ORK
-  /*ros::Subscriber sub_ork_;
-  ros::Publisher pub_obj_col;
-  tf::TransformListener listener_;
-  std::string m_target_frame;
-  std::string m_depth_frame_id;
-  shape_msgs::SolidPrimitive msg_cylinder_;*/
-  //std::vector <moveit_msgs::CollisionObject> msg_obj_cols;
-
-  //to move the head
-  /*robot_model_loader::RobotModelLoader robot_model_loader;
-  robot_model::RobotModelPtr kinematic_model;*/
-
 };
 }
 

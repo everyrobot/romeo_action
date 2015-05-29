@@ -42,10 +42,10 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 set(SRC
   src/block_pick_place.cpp
   src/metablock.cpp
-  src/actions.cpp
+  src/action.cpp
   include/romeo_pick_place/simplepickplace.hpp
   include/romeo_pick_place/metablock.hpp
-  include/romeo_pick_place/actions.hpp
+  include/romeo_pick_place/action.hpp
   include/romeo_pick_place/custom_environment5.hpp
 )
 

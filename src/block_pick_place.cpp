@@ -85,92 +85,86 @@ namespace romeo_pick_place
   }
 
   SimplePickPlace::SimplePickPlace(const bool verbose)
-    : nh_(new ros::NodeHandle("~")),
-      action(nh_, visual_tools_, "left"),
+    : nh_("~"),
       verbose_(verbose),
       saveStat_(true)/*,
       robot_model_loader("robot_description")*/
   {
     // objects related initialization
-    pub_obj_pose = nh_->advertise<geometry_msgs::PoseStamped>("/obj_pose", 100);
-    pub_obj_poses = nh_->advertise<geometry_msgs::PoseArray>("/obj_poses", 100);
-
-    sub_obj_coll = nh_->subscribe<moveit_msgs::CollisionObject>("/collision_object", 10, &SimplePickPlace::updateObjects, this);
-    /*sub_ork_ = nh_->subscribe<object_recognition_msgs::RecognizedObjectArray>("/recognized_object_array", 10, &SimplePickPlace::obj_transform, this);
-    pub_obj_col = nh_->advertise<moveit_msgs::CollisionObject>("/collision_object", 1000);*/
-    //planning_scene_service_ = nh_->serviceClient<moveit_msgs::GetPlanningScene>("get_planning_scene");
-    /*m_target_frame = "base_link";
-    m_depth_frame_id = "CameraDepth_frame";
-    msg_cylinder_.type = shape_msgs::SolidPrimitive::CYLINDER;
-    msg_cylinder_.dimensions.resize(shape_tools::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::CYLINDER>::value);
-    msg_cylinder_.dimensions[shape_msgs::SolidPrimitive::CYLINDER_RADIUS] = BLOCK_SIZE;
-    msg_cylinder_.dimensions[shape_msgs::SolidPrimitive::CONE_HEIGHT] = BLOCK_SIZE*3.0;*/
+    pub_obj_pose = nh_.advertise<geometry_msgs::PoseStamped>("/obj_pose", 100);
+    pub_obj_poses = nh_.advertise<geometry_msgs::PoseArray>("/obj_poses", 100);
+    sub_obj_coll = nh_.subscribe<moveit_msgs::CollisionObject>("/collision_object", 10, &SimplePickPlace::updateObjects, this);
+    //planning_scene_service_ = nh_.serviceClient<moveit_msgs::GetPlanningScene>("get_planning_scene");
 
     std::string base_link = "base_link"; //grasp_data_.base_link_
     msg_obj_pose.header.frame_id = base_link;//grasp_data_.base_link_;
     msg_obj_poses.header.frame_id = base_link;//grasp_data_.base_link_;
 
-    //----------------------------------------------------
-    //move the head
-    // Create a MoveGroup for the head
-    moveit::planning_interface::MoveGroup move_group_head("head");
+    // Load the Robot Viz Tools for publishing to rviz
+    visual_tools_.reset(new moveit_visual_tools::MoveItVisualTools(base_link));//grasp_data_.base_link_
+    visual_tools_->setFloorToBaseHeight(-0.9);
+    visual_tools_->deleteAllMarkers();
 
-    //get the current set of joint values for the group.
-    std::vector<double> joints_head;
-    move_group_head.getCurrentState()->copyJointGroupPositions(move_group_head.getCurrentState()->getRobotModel()->getJointModelGroup(move_group_head.getName()), joints_head);
-    //plan to the new joint space goal and visualize the plan.
-    if (joints_head.size()>1)
-      if (joints_head[1] == 0.0)
-        joints_head[1] = 0.3;
-    move_group_head.setJointValueTarget(joints_head);
+    // Let everything load
+    ros::Duration(1.0).sleep();
 
-    moveit::planning_interface::MoveGroup::Plan my_plan;
-    bool success = move_group_head.plan(my_plan);
-    ROS_INFO("Moving the head to look down - planning %s",success?"":"FAILED");
-    sleep(1.0);
-    if (success)
-    {
-      ROS_INFO("Moving the head to look down - action %s",success?"":"FAILED");
-      move_group_head.move();
-      sleep(1.0);
-    }
+    // Show grasp visualizations or not
+    visual_tools_->setMuted(false);
 
-      // Load the Robot Viz Tools for publishing to rviz
-      visual_tools_.reset(new moveit_visual_tools::MoveItVisualTools(base_link));//grasp_data_.base_link_
-      visual_tools_->setFloorToBaseHeight(-0.9);
-      visual_tools_->deleteAllMarkers();
+    // Create the table
+    createEnvironment(visual_tools_);
 
-      // Let everything load
-      ros::Duration(1.0).sleep();
+    action = new Action(&nh_, visual_tools_, "left");
+    //reset to the initial pose
+    action->poseHeadDown();
+    action->poseHandZero();
 
-      // Show grasp visualizations or not
-      visual_tools_->setMuted(false);
+    //updateObjectsVirtual();
 
-      // Create the walls and tables
-      createEnvironment(visual_tools_);
+    testReachablePoses();
 
-      //reset hand to the initial position
-      action.returnAction(action.planning_group_name_);
-      action.returnAction(action.end_effector_);
-
-      //updateObjectsVirtual();
-
-      while(ros::ok())
-        startRoutine();
+    while(ros::ok())
+      startRoutine();
   }
 
   void SimplePickPlace::testReachablePoses()
   {
+    std::vector<MetaBlock> blocks;
     MetaBlock *block = new MetaBlock("BlockTest", 0.5, 0.2, shape_msgs::SolidPrimitive::CYLINDER, BLOCK_SIZE);
+
+    geometry_msgs::PoseArray msg_poses;
+    msg_poses.header.frame_id = "base_link";//grasp_data_.base_link_;
 
     int count = 0;
     while (count < 100){
       //generate a random position
-      //block->applyRndPose();
+      block->applyRndPose();
+      blocks.push_back(*block);
 
-      action.testReachablity(block);
+      //display
+      msg_poses.poses.push_back(block->start_pose);
+      //pub_obj_poses.publish(msg_poses);
+
       ++count;
     }
+    pub_obj_poses.publish(msg_poses);
+
+    geometry_msgs::PoseArray msg_poses_validated;
+    ROS_INFO_STREAM_NAMED("pick_place","Should I test samples in the goal space? (y/n)");
+    char input; // used for prompting yes/no
+    std::cin >> input;
+    if( input == 'y' ){
+      //test if reachable
+      for (std::vector<MetaBlock>::iterator block=blocks.begin(); block != blocks.end(); ++block)
+        for (int i=0; i<blocks.size(); ++i)
+        if (action->testReachablity(&blocks[i]))
+          //poses_validated.push_back(block->start_pose);
+          msg_poses_validated.poses.push_back(block->start_pose);
+        /*else
+          poses_failed.push_back(block->start_pose);*/
+    }
+
+    pub_obj_poses.publish(msg_poses_validated);
   }
 
   //clean the object list based on the timestamp
@@ -200,13 +194,16 @@ namespace romeo_pick_place
             break;
           }
 
-        if (idx == -1)
+        if ((idx == -1) || (blocks.size() <= idx) || (msg_obj_poses.poses.size() <= idx)) //if not found, create a new one
         {
          blocks.push_back(MetaBlock(msg->id, msg->header.stamp, msg->primitive_poses[0], shape_msgs::SolidPrimitive::CYLINDER, BLOCK_SIZE));
          msg_obj_poses.poses.push_back(blocks.back().start_pose);
         }
         else
+        {
           blocks[idx].updatePose(msg->primitive_poses[0]);
+          msg_obj_poses.poses[idx] = blocks.back().start_pose;
+        }
       }
     }
     catch (tf::TransformException ex){
@@ -233,27 +230,25 @@ namespace romeo_pick_place
       {
         block_id = 0;
         blocks.clear();
-        msg_obj_poses.poses.clear();
+        //msg_obj_poses.poses.clear();
         pub_obj_poses.publish(msg_obj_poses);
         break;
       }
 
-      // Do for all blocks
-      //for (std::size_t block_id = 0; block_id < blocks.size(); ++block_id)
+      //for (std::size_t block_id = 0; block_id < blocks.size(); ++block_id) // Do for all blocks
       //{
         actionDesired = promptUserAction(blocks[block_id].name, blocks.size());
         ROS_INFO_STREAM_NAMED("pick_place:","Action chosen '" << actionDesired << "'"
                               << " object is " << block_id << " actionState is " << actionState);
 
-        // Pick -------------------------------------------------------------------------------------
+        // Pick -----------------------------------------------------
         if ((actionState == 0) && ((actionDesired == 1) || (actionDesired == 2)))
         {
-          if(!action.pickAction(&blocks[block_id]))
+          if(!action->pickAction(&blocks[block_id]))
           {
             /*if (saveStat_)
               poses_failed.push_back(blocks[block_id].start_pose);*/
 
-            ROS_ERROR_STREAM_NAMED("pick_place","Pick failed.");
             resetBlock(blocks[block_id]);
             ++block_id;
             break;
@@ -264,17 +259,14 @@ namespace romeo_pick_place
               poses_validated.push_back(blocks[block_id].start_pose);*/
 
             actionState += 2; //approach to object and grasp
-            ROS_INFO_STREAM_NAMED("pick_place","Pick success ---------------------------");
-            sleep(1.0);
           }
         } //end pick
 
-        // Place -------------------------------------------------------------------------------------
+        // Place --------------------------------------------------------
         else if ((actionState == 2) && ((actionDesired == 3) || (actionDesired == 4)))
         {
-          if(!action.placeAction(&blocks[block_id]))
+          if(!action->placeAction(&blocks[block_id]))
           {
-            ROS_ERROR_STREAM_NAMED("pick_place","Place failed.");
             ++block_id;
             break;
           }
@@ -282,31 +274,23 @@ namespace romeo_pick_place
           {
             // Swap this block's start and end pose so that we can then move them back to position
             swapPoses(&blocks[block_id].start_pose, &blocks[block_id].goal_pose);
-
             ++actionState;
-            ROS_INFO_STREAM_NAMED("pick_place","Place success ----------------------------");
-            sleep(1.0);
           }
         } // end place
 
-        // Return to the initial pose ---------------------------------------------------------------------
+        // Return to the initial pose ------------------------------------
         if ((actionDesired == 5))
         {
-          if(!action.returnAction(action.planning_group_name_))
-          {
-            ROS_ERROR_STREAM_NAMED("pick_place","Return failed.");
-            break;
-          }
-          else
+          if(action->poseHandZero())
           {
             if (actionState == 3)
               swapPoses(&blocks[block_id].goal_pose, &blocks[block_id].start_pose);
             resetBlock(blocks[block_id]);
 
             actionState = 0;
-            ROS_INFO_STREAM_NAMED("pick_place","Return success ----------------------------");
-            sleep(1.0);
           }
+          else
+            break;
         } // end place
         else if ((actionDesired == 6))
           break;
@@ -392,6 +376,8 @@ int main(int argc, char **argv)
       }
     }
   }
+
+  srand (time(NULL));
 
   // Start the pick place node
   romeo_pick_place::SimplePickPlace server(verbose);
