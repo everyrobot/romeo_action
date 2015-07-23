@@ -6,7 +6,6 @@ project(${PROJECTNAME})
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS 
-  #moveit_core 
   moveit_ros_planning 
   moveit_ros_planning_interface
   moveit_visual_tools
@@ -15,12 +14,12 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   roscpp
   cmake_modules
-  #object_recognition_msgs
-  #moveit_planning_scene_interface
+  object_recognition_msgs
+  actionlib
 )
 
 #find_package(Eigen REQUIRED)
-find_package(Boost REQUIRED system thread)
+find_package(Boost REQUIRED system thread date_time system filesystem)
 
 #find_package(OpenCV REQUIRED)
 
@@ -39,17 +38,28 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
 
+link_directories(${Boost_LIBRARY_DIRS})
+
 set(SRC
-  src/block_pick_place.cpp
+  src/main.cpp
+  src/simplepickplace.cpp
   src/metablock.cpp
   src/action.cpp
+  src/postures.cpp
+  src/objprocessing.cpp
   include/romeo_pick_place/simplepickplace.hpp
   include/romeo_pick_place/metablock.hpp
   include/romeo_pick_place/action.hpp
   include/romeo_pick_place/custom_environment5.hpp
+  include/romeo_pick_place/postures.hpp
+  include/romeo_pick_place/tools.hpp
+  include/romeo_pick_place/objprocessing.hpp
 )
 
 # Main executable
 add_executable(${PROJECTNAME} ${SRC})
-target_link_libraries(${PROJECTNAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+target_link_libraries(${PROJECTNAME}
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES})
 

@@ -1,44 +1,39 @@
 
 #include <moveit_visual_tools/moveit_visual_tools.h> // simple tool for showing grasps
 
-#ifndef BAXTER_PICK_PLACE__CUSTOM_ENVIRONMENT_
-#define BAXTER_PICK_PLACE__CUSTOM_ENVIRONMENT_
+#ifndef CUSTOM_ENVIRONMENT_
+#define CUSTOM_ENVIRONMENT_
 
 namespace romeo_pick_place
 {
 
 // environment
-static const std::string SUPPORT_SURFACE1_NAME = "monitor";
-static const std::string SUPPORT_SURFACE2_NAME = "desk";
-static const std::string SUPPORT_SURFACE3_NAME = "table";
-static const std::string WALL1_NAME = "back_wall";
-static const std::string WALL2_NAME = "right_wall";
-static const std::string WALL3_NAME = "left_wall";
-
+std::string SUPPORT_SURFACE3_NAME = ""; //"table";
 // table dimensions
-static const double TABLE_HEIGHT = 0.71;//0.76;
-
-static const double TABLE_WIDTH  = 0.86;
-static const double TABLE_DEPTH  = 0.86;
-static const double TABLE_X = 0.4826 + TABLE_DEPTH / 2;
+static const double TABLE_HEIGHT = 0.84 -0.15; //0.86; //0.81; //0.64; //0.71;//0.76;
+static const double TABLE_WIDTH  = 0.1 + 2* 0.2; //0.47; //0.44; //0.86;
+static const double TABLE_DEPTH  = 0.35; //0.04 + 0.4;//0.36; //0.86;//0.86;
+static const double TABLE_X = 0.45; //0.4826 + TABLE_DEPTH / 2;
 static const double TABLE_Y = 0; //-TABLE_WIDTH/2;
 
 // block dimensions
 static const double BLOCK_SIZE = 0.03; //0.03;
 
+void cleanEnvironment(moveit_visual_tools::MoveItVisualToolsPtr visual_tools_)
+{
+  visual_tools_->cleanupCO(SUPPORT_SURFACE3_NAME);
+}
+
 void createEnvironment(moveit_visual_tools::MoveItVisualToolsPtr visual_tools_)
 {
-  visual_tools_->cleanupCO(SUPPORT_SURFACE1_NAME);
-  visual_tools_->cleanupCO(SUPPORT_SURFACE2_NAME);
-  visual_tools_->cleanupCO(WALL1_NAME);
-  visual_tools_->cleanupCO(WALL2_NAME);
-  visual_tools_->cleanupCO(WALL3_NAME);
+  SUPPORT_SURFACE3_NAME = "table";
 
-  // --------------------------------------------------------------------------------------------
-  // Add objects to scene
+  visual_tools_->cleanupCO(SUPPORT_SURFACE3_NAME);
 
   // Tables                          x,         y,          angle, width,       height,       depth,       name
-  //visual_tools_->publishCollisionTable(TABLE_X,   TABLE_Y,    0,     TABLE_WIDTH, TABLE_HEIGHT, TABLE_DEPTH, SUPPORT_SURFACE3_NAME); // andy table
+  visual_tools_->publishCollisionTable(TABLE_X,   TABLE_Y,    0,     TABLE_WIDTH, TABLE_HEIGHT, TABLE_DEPTH, SUPPORT_SURFACE3_NAME); // andy table
+
+  ROS_INFO_STREAM_NAMED("pick_place:", "SUPPORT_SURFACE is " << SUPPORT_SURFACE3_NAME);
 }
 
 double getTableHeight(double floor_offset)
