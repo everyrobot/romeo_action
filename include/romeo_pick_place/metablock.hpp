@@ -1,6 +1,9 @@
 #ifndef METABLOCK_H
 #define METABLOCK_H
 
+// ROS
+#include <ros/ros.h>
+
 #include <geometry_msgs/Pose.h>
 #include <shape_tools/solid_primitive_dims.h>
 
@@ -9,12 +12,6 @@
 class MetaBlock
 {
 public:
-  MetaBlock(const std::string name,
-            const double start_x,
-            const double start_y,
-            const double start_z,
-            const uint shapeType,
-            const double size);
   MetaBlock(const std::string name,
             const double start_x,
             const double start_y,
@@ -37,9 +34,9 @@ public:
             const object_recognition_msgs::ObjectType type);
   void updatePose(const geometry_msgs::Pose start_pose);
   void setRndPose();
-  //void resetBlock();
 
   std::string name;
+  double size;
   ros::Time timestamp;
   geometry_msgs::Pose start_pose;
   geometry_msgs::Pose goal_pose;

@@ -37,8 +37,35 @@
  * \author  Dave Coleman
  */
 
-//publish messages with objects poses
+#include <boost/program_options.hpp>
 #include <romeo_pick_place/simplepickplace.hpp>
+
+void parse_command_line(int argc, char ** argv, std::string &robot_name_, bool &verbose_)
+{
+  std::string robot_name;
+  bool verbose;
+  boost::program_options::options_description desc("Configuration");
+  desc.add_options()
+    ("help", "show this help message")
+    ("robot_name", boost::program_options::value<std::string>(&robot_name)->default_value(robot_name_),
+     "robot_name")
+    ("verbose", boost::program_options::value<bool>(&verbose)->default_value(verbose_),
+     "verbose")
+    /*("depth_frame_id", boost::program_options::value<std::string>(&depth_frame_id)->default_value(m_depth_frame_id),
+     "depth_frame_id")*/
+    ;
+  boost::program_options::variables_map vm;
+  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+  boost::program_options::notify(vm);
+  robot_name_ = vm["robot_name"].as<std::string>();
+  verbose_ = vm["verbose"].as<bool>();
+  ROS_INFO_STREAM("robot name is " << robot_name_);
+
+  if (vm.count("help")) {
+    std::cout << desc << "\n";
+    return ;
+  }
+}
 
 int main(int argc, char **argv)
 {
@@ -48,7 +75,7 @@ int main(int argc, char **argv)
 
   // Check for verbose flag
   bool verbose = false;
-  if (argc > 1)
+  /*if (argc > 1)
   {
     for (std::size_t i = 0; i < argc; ++i)
     {
@@ -58,12 +85,16 @@ int main(int argc, char **argv)
         verbose = true;
       }
     }
-  }
+  }*/
+  //verbose = true;
+
+  std::string robot_name("romeo");
+  parse_command_line(argc, argv, robot_name, verbose);
 
   srand (time(NULL));
 
   // Start the pick place node
-  romeo_pick_place::SimplePickPlace server(verbose);
+  romeo_pick_place::SimplePickPlace server(robot_name, verbose);
 
   ROS_INFO_STREAM_NAMED("main", "Shutting down.");
   ros::shutdown();

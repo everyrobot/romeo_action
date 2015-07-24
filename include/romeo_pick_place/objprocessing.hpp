@@ -16,7 +16,7 @@ class Objprocessing
 public:
   Objprocessing(ros::NodeHandle *nh_);
   bool getMeshFromDB(object_recognition_msgs::GetObjectInformation &obj_info);
-  void triggerObjectDetection();
+  bool triggerObjectDetection();
 
   ros::NodeHandle *nh_;
 
@@ -34,6 +34,7 @@ public:
   boost::scoped_ptr<actionlib::SimpleActionClient<object_recognition_msgs::ObjectRecognitionAction> > object_recognition_client_;
 
   bool found_srv_obj_info;
+  bool found_object_recognition_client_;
 };
 
 #endif // OBJPROCESSING_HPP

@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 #find_package(Eigen REQUIRED)
 find_package(Boost REQUIRED system thread date_time system filesystem)
+find_package(Boost QUIET COMPONENTS program_options)
 
 #find_package(OpenCV REQUIRED)
 
@@ -47,13 +48,18 @@ set(SRC
   src/action.cpp
   src/postures.cpp
   src/objprocessing.cpp
+  src/actionclient.cpp
+  src/grasp_filter.cpp
   include/romeo_pick_place/simplepickplace.hpp
   include/romeo_pick_place/metablock.hpp
   include/romeo_pick_place/action.hpp
   include/romeo_pick_place/custom_environment5.hpp
   include/romeo_pick_place/postures.hpp
   include/romeo_pick_place/tools.hpp
+  include/romeo_pick_place/toolsForAction.hpp
   include/romeo_pick_place/objprocessing.hpp
+  include/romeo_pick_place/actionclient.hpp
+  include/romeo_pick_place/grasp_filter.hpp
 )
 
 # Main executable
