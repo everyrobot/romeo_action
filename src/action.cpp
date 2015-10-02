@@ -1,6 +1,6 @@
-#include <romeo_pick_place/action.hpp>
-
 #include <moveit_msgs/PickupGoal.h>
+
+#include <romeo_pick_place/action.hpp>
 
 namespace romeo_pick_place
 {
@@ -10,7 +10,8 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
   arm(arm),
   end_eff(arm+"_hand"),
   plan_group(arm+"_arm"),
-  posture(robot_name, end_eff, plan_group)
+  posture(robot_name, end_eff, plan_group),
+  grasp_filter_(plan_group)
 {
   /*ROS_INFO_STREAM("Arm: " << arm);
   ROS_INFO_STREAM("End Effector: " << end_eff);
@@ -54,9 +55,6 @@ Action::Action(ros::NodeHandle *nh_, moveit_visual_tools::MoveItVisualToolsPtr &
 
   pub_obj_pose = nh_->advertise<geometry_msgs::PoseStamped>("/pose_target", 10);
   pub_obj_poses = nh_->advertise<geometry_msgs::PoseStamped>("/pose_targets", 10);
-
-  //set the intial pose
-  //pose_init;
 }
 
 bool Action::pickDefault(MetaBlock *block)
@@ -65,41 +63,41 @@ bool Action::pickDefault(MetaBlock *block)
   bool done = false;
   moveit_msgs::Grasp g;
 
-g.grasp_pose.header.frame_id = block->name; //"base_link";
-g.grasp_pose.pose = block->start_pose;
-g.grasp_pose.pose = grasp_data_.grasp_pose_to_eef_pose_;
+  g.grasp_pose.header.frame_id = block->name; //"base_link";
+  g.grasp_pose.pose = block->start_pose;
+  g.grasp_pose.pose = grasp_data_.grasp_pose_to_eef_pose_;
 
-g.pre_grasp_approach.direction.header.frame_id = grasp_data_.ee_parent_link_; //"base_link"; //"LWristYaw_link"; //lscene->getPlanningFrame();
-g.pre_grasp_approach.direction.vector.x = 0;
-g.pre_grasp_approach.direction.vector.y = 0;
-g.pre_grasp_approach.direction.vector.z = -1;
-g.pre_grasp_approach.min_distance = 0.06; //0.01;
-g.pre_grasp_approach.desired_distance = 0.2;
+  g.pre_grasp_approach.direction.header.frame_id = grasp_data_.ee_parent_link_; //"base_link"; //"LWristYaw_link"; //lscene->getPlanningFrame();
+  g.pre_grasp_approach.direction.vector.x = 0;
+  g.pre_grasp_approach.direction.vector.y = 0;
+  g.pre_grasp_approach.direction.vector.z = -1;
+  g.pre_grasp_approach.min_distance = 0.06; //0.01;
+  g.pre_grasp_approach.desired_distance = 0.2;
 
-g.post_grasp_retreat.direction.header.frame_id = grasp_data_.ee_parent_link_; //"base_link"; //"LWristYaw_link"; //lscene->getPlanningFrame();
-g.post_grasp_retreat.direction.vector.x = 0;
-g.post_grasp_retreat.direction.vector.y = 0;
-g.post_grasp_retreat.direction.vector.z = 1; // Retreat direction (pos z axis)
-g.post_grasp_retreat.min_distance = 0.06;
-g.post_grasp_retreat.desired_distance = 0.2;
+  g.post_grasp_retreat.direction.header.frame_id = grasp_data_.ee_parent_link_; //"base_link"; //"LWristYaw_link"; //lscene->getPlanningFrame();
+  g.post_grasp_retreat.direction.vector.x = 0;
+  g.post_grasp_retreat.direction.vector.y = 0;
+  g.post_grasp_retreat.direction.vector.z = 1; // Retreat direction (pos z axis)
+  g.post_grasp_retreat.min_distance = 0.06;
+  g.post_grasp_retreat.desired_distance = 0.2;
 
-g.pre_grasp_posture.header.frame_id = grasp_data_.ee_parent_link_; //"base_link";
-g.grasp_posture.header.frame_id = grasp_data_.ee_parent_link_; //"base_link";
-if (grasp_data_.grasp_posture_.joint_names.size() > 0)
-{
-  g.pre_grasp_posture.joint_names.resize(1);
-  g.pre_grasp_posture.joint_names[0] = grasp_data_.grasp_posture_.joint_names[0]; //"LHand";
-  g.pre_grasp_posture.points.resize(1);
-  g.pre_grasp_posture.points[0].positions.resize(1);
-  g.pre_grasp_posture.points[0].positions[0] = 0.0;
+  g.pre_grasp_posture.header.frame_id = grasp_data_.ee_parent_link_; //"base_link";
+  g.grasp_posture.header.frame_id = grasp_data_.ee_parent_link_; //"base_link";
+  if (grasp_data_.grasp_posture_.joint_names.size() > 0)
+  {
+    g.pre_grasp_posture.joint_names.resize(1);
+    g.pre_grasp_posture.joint_names[0] = grasp_data_.grasp_posture_.joint_names[0]; //"LHand";
+    g.pre_grasp_posture.points.resize(1);
+    g.pre_grasp_posture.points[0].positions.resize(1);
+    g.pre_grasp_posture.points[0].positions[0] = 0.0;
 
-  g.grasp_posture.joint_names.resize(1);
-  g.grasp_posture.joint_names[0] = g.pre_grasp_posture.joint_names[0];
-  g.grasp_posture.points.resize(1);
-  g.grasp_posture.points[0].positions.resize(1);
-  g.grasp_posture.points[0].positions[0] = 1.0;
-}
-std::cout << "-- pickDefault g " << g << std::endl;
+    g.grasp_posture.joint_names.resize(1);
+    g.grasp_posture.joint_names[0] = g.pre_grasp_posture.joint_names[0];
+    g.grasp_posture.points.resize(1);
+    g.grasp_posture.points[0].positions.resize(1);
+    g.grasp_posture.points[0].positions[0] = 1.0;
+  }
+  std::cout << "-- pickDefault g " << g << std::endl;
 
     grasps[0] = g;
 
@@ -212,6 +210,12 @@ bool Action::poseHandInit()
   return posture.poseHandInit(end_eff, plan_group, arm);
 }
 
+bool Action::poseHand(std::vector<double> *pose_hand)
+{
+  move_group_->setGoalTolerance(0.05);
+  return posture.poseHand(end_eff, plan_group, arm, pose_hand);
+}
+
 bool Action::poseHandZero()
 {
   return posture.poseHandZero(end_eff, plan_group);
@@ -264,7 +268,7 @@ float Action::reachGrasp(geometry_msgs::Pose pose_target, const std::string surf
     return std::numeric_limits<float>::max();
 
   float dist = computeDistance(move_group_->getCurrentPose().pose, move_group_->getPoseTarget().pose);
-  ROS_INFO_STREAM("-- reachAction: distance to the target pose = " << dist);
+  ROS_INFO_STREAM("Reaching distance to the target = " << dist);
 
   /*moveit_msgs::PickupGoal goal;
   collision_detection::AllowedCollisionMatrixPtr approach_grasp_acm(new collision_detection::AllowedCollisionMatrix(planning_scene->getAllowedCollisionMatrix()));
@@ -332,6 +336,9 @@ bool Action::reachAction(geometry_msgs::Pose pose_target, const std::string surf
     {
       tolerance_min = tolerance;
       tolerance = (tolerance_max-tolerance_min) / 2.0;
+
+      if (verbose_)
+        ROS_INFO_STREAM_NAMED("pick_place:","Planning retry with the tolerance " << tolerance);
     }
     ++attempts;
   }
@@ -347,7 +354,7 @@ bool Action::reachAction(geometry_msgs::Pose pose_target, const std::string surf
     success = move_group_->move();
 
   if (verbose_ && success)
-    ROS_INFO_STREAM_NAMED("pick_place","Reach success with tolerance " << tolerance << "\n\n");
+    ROS_INFO_STREAM_NAMED("pick_place","Reaching success with tolerance " << tolerance << "\n\n");
 
   return success;
 }
@@ -357,7 +364,7 @@ bool Action::graspPlanAllPossible(MetaBlock *block, const std::string surface_na
   bool success(false);
 
   if (verbose_)
-    ROS_INFO_STREAM_NAMED("pick_place:","Planning " << block->name << " at pose " << block->start_pose);
+    ROS_INFO_STREAM_NAMED("pick_place:","Planning all possible grasps to " << block->start_pose);
 
   move_group_->setGoalTolerance(0.1);
   //move_group_->setPoseReferenceFrame("base_link"); //"LWristYaw_link"
@@ -387,10 +394,7 @@ bool Action::graspPlanAllPossible(MetaBlock *block, const std::string surface_na
       if (success)
         ++counts;
     }
-    if (counts == 0)
-      ROS_ERROR_STREAM_NAMED("pick_place","Planning failed \n\n");
-    else
-      ROS_INFO_STREAM_NAMED("pick_place", "Planning success for " << counts << " poses! \n\n");
+    ROS_INFO_STREAM_NAMED("pick_place", "Planning success for " << counts << " generated poses! \n\n");
   }
   return success;
 }
@@ -437,10 +441,11 @@ std::vector<geometry_msgs::Pose> Action::configureForPlanning(const std::vector<
 
   if (grasps.size() > 0)
   {
-    int i = 0;
-    for (std::vector<moveit_msgs::Grasp>::const_iterator it=grasps.begin(); it!=grasps.end();++it, ++i)
+    std::vector<moveit_msgs::Grasp>::const_iterator it_grasp;
+    std::vector<geometry_msgs::Pose>::iterator it_pose;
+    for (it_grasp=grasps.begin(), it_pose=targets.begin(); it_grasp!=grasps.end(); ++it_grasp, ++it_pose)
     {
-      targets[i] = it->grasp_pose.pose;
+      *it_pose = it_grasp->grasp_pose.pose;
     }
   }
 
@@ -451,7 +456,7 @@ bool Action::pickAction(MetaBlock *block, const std::string surface_name)
 {
   bool success(false);
   if (verbose_)
-    ROS_INFO_STREAM_NAMED("pick_place:","Picking " << block->name << " at pose " << block->start_pose);
+    ROS_INFO_STREAM_NAMED("pick_place:","Picking at pose " << block->start_pose);
 
   std::vector<moveit_msgs::Grasp> grasps = generateGrasps(block);
 
@@ -560,7 +565,7 @@ void Action::filterGrasps(MetaBlock *block)
 
   if (grasps.size() > 0)
   {
-    grasp_filter_->filterGrasps(grasps);
+    grasp_filter_.filterGrasps(grasps);
   }
 }
 

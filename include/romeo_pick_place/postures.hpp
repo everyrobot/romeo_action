@@ -19,6 +19,8 @@ public:
   bool poseHandOpen(const std::string &end_eff);
   bool poseHandClose(const std::string &end_eff);
 
+  bool poseHand(const std::string &end_eff, const std::string &group, const std::string &arm, std::vector<double> *pose_hand);
+
   std::vector<double> pose_head_down;
   std::vector<double> pose_head_zero;
   std::vector<double> pose_hand_open;

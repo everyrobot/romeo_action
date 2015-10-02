@@ -79,6 +79,14 @@ bool Posture::poseHandInit(const std::string &end_eff, const std::string &group,
   return success;
 }
 
+bool Posture::poseHand(const std::string &end_eff, const std::string &group, const std::string &arm, std::vector<double> *pose_hand)
+{
+  //end-effector first
+  goToPose(end_eff, &pose_hand_open);
+
+  return goToPose(group, pose_hand);
+}
+
 bool Posture::poseHandOpen(const std::string &end_eff)
 {
   goToPose(end_eff, &pose_hand_open);

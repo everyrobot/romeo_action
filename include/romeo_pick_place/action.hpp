@@ -44,6 +44,8 @@ public:
   bool reachAction(geometry_msgs::Pose pose_target, const std::string surface_name="");
   bool reachInitPose();
 
+  bool poseHand(std::vector<double> *pose_hand);
+
   void filterGrasps(MetaBlock *block);
 
   geometry_msgs::Pose getPose();
@@ -61,6 +63,7 @@ public:
   const std::string end_eff;
   const std::string plan_group;
   Posture posture;
+  GraspFilter grasp_filter_;
 
   //grasp configuration
   moveit_simple_grasps::GraspData grasp_data_;
@@ -87,7 +90,7 @@ private:
   geometry_msgs::Pose pose_init;
 
   // class for filter object
-  GraspFilterPtr grasp_filter_;
+  //GraspFilterPtr grasp_filter_;
 };
 
 

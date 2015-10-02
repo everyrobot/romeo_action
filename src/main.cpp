@@ -69,7 +69,7 @@ void parse_command_line(int argc, char ** argv, std::string &robot_name_, bool &
 
 int main(int argc, char **argv)
 {
-  ros::init (argc, argv, "romeo_pick_place_adv");
+  ros::init (argc, argv, "pick_place_moveit");
   ros::AsyncSpinner spinner(1);
   spinner.start();
 

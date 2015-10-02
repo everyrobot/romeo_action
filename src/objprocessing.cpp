@@ -11,11 +11,12 @@ Objprocessing::Objprocessing(ros::NodeHandle *nh_):
 {
   found_srv_obj_info = true;
   found_object_recognition_client_ = false;
+
   ros::Time start_time = ros::Time::now();
-  while ((nh_->ok()) && (!ros::service::waitForService(mesh_srv_name, ros::Duration(2.0))))
+  while (!ros::service::waitForService(mesh_srv_name, ros::Duration(2.0)))
   {
     ROS_INFO("Waiting for %s service to come up", mesh_srv_name.c_str());
-    if (ros::Time::now() - start_time >= ros::Duration(5.0))
+    if (!nh_->ok() || ros::Time::now() - start_time >= ros::Duration(5.0))
     {
       found_srv_obj_info = false;
       break;
@@ -33,7 +34,6 @@ bool Objprocessing::getMeshFromDB(object_recognition_msgs::GetObjectInformation 
 {
   if (!found_srv_obj_info)
     return false;
-
   if ( !get_model_mesh_srv_.call(obj_info) )
   {
     ROS_ERROR("The service get_object_info does not respond");

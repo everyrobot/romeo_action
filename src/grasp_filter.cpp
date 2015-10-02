@@ -3,8 +3,19 @@
 namespace romeo_pick_place
 {
 
-GraspFilter::GraspFilter()
+GraspFilter::GraspFilter(/* const std::string& base_link, bool rviz_verbose,
+                          //VisualizationToolsPtr rviz_tools,*/
+                          const std::string& planning_group):
+  base_link_("odom"),//base_link),
+  /*rviz_verbose_(rviz_verbose),
+  //rviz_tools_(rviz_tools),*/
+  planning_group_(planning_group),
+  move_group_eef(moveit::planning_interface::MoveGroup(planning_group_))
 {
+  ROS_INFO_STREAM_NAMED("grasp","GraspFilter ready.");
+
+  // Get the planning
+  robot_model_ = move_group_eef.getCurrentState()->getRobotModel();
 }
 
 // Return grasps that are kinematically feasible
@@ -32,11 +43,9 @@ bool GraspFilter::filterGrasps(std::vector<moveit_msgs::Grasp>& possible_grasps)
 
   // -----------------------------------------------------------------------------------------------
   // Get the solver timeout from kinematics.yaml
-  //double timeout = planning_scene_monitor_->getPlanningScene()->getCurrentState().
-  //  getJointStateGroup(planning_group_)->getDefaultIKTimeout();
-
   double timeout = robot_model_->getJointModelGroup( planning_group_ )->getDefaultIKTimeout();
-  ROS_INFO_STREAM_NAMED("grasp_filter","Planning timeout " << timeout);
+  ROS_INFO_STREAM_NAMED("grasp_filter","--Planning timeout " << timeout << " == "
+                        << move_group_eef.getCurrentState()->getRobotModel()->getJointModelGroup(planning_group_)->getDefaultIKTimeout());
   timeout = 0.05;
 
   // -----------------------------------------------------------------------------------------------
@@ -50,8 +59,7 @@ bool GraspFilter::filterGrasps(std::vector<moveit_msgs::Grasp>& possible_grasps)
     robot_model::SolverAllocatorFn kin_allocator = kin_plugin_loader->getLoaderFunction();
 
     const robot_model::JointModelGroup* joint_model_group = robot_model_->getJointModelGroup(planning_group_);
-  ROS_INFO_STREAM_NAMED("grasp_filter","planning_group_ = " << planning_group_
-                        << ", " << joint_model_group->getJointModelNames().size());
+  //ROS_INFO_STREAM_NAMED("grasp_filter","planning_group_ = " << kin_plugin_loader-);
     // Create an ik solver for every thread
     for (int i = 0; i < num_threads; ++i)
     {
@@ -126,7 +134,8 @@ bool GraspFilter::filterGrasps(std::vector<moveit_msgs::Grasp>& possible_grasps)
 void GraspFilter::filterGraspThread(IkThreadStruct ik_thread_struct)
 {
   // Seed state - start at zero
-  std::vector<double> ik_seed_state(5); //7); // fill with zeros
+  std::vector<double> ik_seed_state; //(move_group_eef.getActiveJoints().size());//5); //7); // fill with zeros
+  move_group_eef.getCurrentState()->copyJointGroupPositions(move_group_eef.getCurrentState()->getRobotModel()->getJointModelGroup(move_group_eef.getName()), ik_seed_state);
 
   std::vector<double> solution;
   moveit_msgs::MoveItErrorCodes error_code;
@@ -144,13 +153,15 @@ void GraspFilter::filterGraspThread(IkThreadStruct ik_thread_struct)
     ROS_WARN_STREAM_NAMED("temp","ik_pose" << *ik_pose);
     std::copy(ik_seed_state.begin(), ik_seed_state.end(), std::ostream_iterator<double>(std::cout, "\n"));
     ROS_WARN_STREAM_NAMED("temp","timeout" << ik_thread_struct.timeout_);
-    std::copy(solution.begin(), solution.end(), std::ostream_iterator<double>(std::cout, "\n"));
+    //std::copy(solution.begin(), solution.end(), std::ostream_iterator<double>(std::cout, "\n"));
     ROS_WARN_STREAM_NAMED("temp","error_code" << error_code);
 
+    kinematics::KinematicsQueryOptions options;
+    //options.return_approximate_solution = true;
 
     // Test it with IK
     ik_thread_struct.kin_solver_->
-      searchPositionIK(*ik_pose, ik_seed_state, ik_thread_struct.timeout_, solution, error_code);
+      searchPositionIK(*ik_pose, ik_seed_state, ik_thread_struct.timeout_, solution, error_code, options);
 
     // Results
     if( error_code.val == moveit_msgs::MoveItErrorCodes::SUCCESS )
@@ -178,7 +189,7 @@ void GraspFilter::filterGraspThread(IkThreadStruct ik_thread_struct)
       ROS_INFO_STREAM_NAMED("grasp","Unable to find IK solution for pose.");
     else if( error_code.val == moveit_msgs::MoveItErrorCodes::TIMED_OUT )
     {
-      //ROS_INFO_STREAM_NAMED("grasp","Unable to find IK solution for pose: Timed Out.");
+      ROS_INFO_STREAM_NAMED("grasp","Unable to find IK solution for pose: Timed Out.");
       //std::copy(solution.begin(),solution.end(), std::ostream_iterator<double>(std::cout, "\n"));
     }
     else

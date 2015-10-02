@@ -24,7 +24,13 @@ namespace romeo_pick_place
       verbose_(verbose),
       saveStat_(true),
       base_frame("odom"), //base_link
-      block_size(0.03),
+      block_size(0.03), //0.03 //0.032
+      block_size_r(0.15), //0.11 //3.67), //2.22
+      env_shown_(false),
+      x_min(0.35),
+      x_max(0.5),
+      z_min(-0.17),
+      z_max(-0.05),
       pose_default(),
       pose_default_r(),
       objproc(&nh_priv_)
@@ -72,6 +78,7 @@ namespace romeo_pick_place
     visual_tools_->removeAllCollisionObjects();
     visual_tools_->setMuted(false);
     cleanEnvironment(visual_tools_);
+    env_shown_ = false;
     ros::Duration(1.0).sleep();
 
     action_left = new Action(&nh_, visual_tools_, "left", robot_name_);
@@ -79,14 +86,35 @@ namespace romeo_pick_place
 
     //move the robot to the initial position
     //if (promptUserQuestion("Should I move the head to look down?"))
-      action_left->poseHeadDown();
+      //action_left->poseHeadDown();
     //if (promptUserQuestion(("Should I move the "+action_left->end_eff+" to the initial pose?").c_str()))
-      action_left->poseHandInit();
+      //action_left->poseHandInit();
+    std::vector<double> pose_arm;
+    pose_arm.resize(6, 0.0);
+    if (robot_name_ == "romeo")
+    {
+      pose_arm[0] = 1.74;
+      pose_arm[1] = 0.7;
+      pose_arm[2] = -2.08;
+      pose_arm[3] = -1.15;
+      pose_arm[4] = -0.43;
+      pose_arm[5] = 0.17;
+    }
+    action_left->poseHand(&pose_arm);
+
     //if (promptUserQuestion(("Should I move the "+action_right->plan_group+" to the initial pose?").c_str()))
-      action_right->poseHandInit();
+      //action_right->poseHandInit();
+    if (robot_name_ == "romeo")
+    {
+      pose_arm[1] *= -1;
+      pose_arm[2] *= -1;
+      pose_arm[3] *= -1;
+    }
+    action_right->poseHand(&pose_arm);
 
     // Create the table
     createEnvironment(visual_tools_);
+    env_shown_ = true;
 
     startRoutine();
   }
@@ -109,10 +137,6 @@ namespace romeo_pick_place
     ROS_INFO_STREAM_NAMED("pick_place"," Generating goals in the target space");
 
     double step = 0.04;
-    double x_min = 0.35; //0.3;
-    double x_max = 0.5;
-    double z_min = -0.17;
-    double z_max = -0.05;
     if (robot_name_ == "nao")
     {
       step = 0.03;
@@ -150,7 +174,7 @@ namespace romeo_pick_place
           }
           else
           {
-            blocks_test.push_back(MetaBlock("BlockTest", x, y, z, 0,0,0,0, shape_msgs::SolidPrimitive::CYLINDER, block_size));
+            blocks_test.push_back(MetaBlock("BlockTest", x, y, z, 0,0,0,0, shape_msgs::SolidPrimitive::CYLINDER, block_size, block_size_r));
           }
 
           msg_poses.poses.push_back(blocks_test.back().start_pose);
@@ -173,7 +197,7 @@ namespace romeo_pick_place
       float x = 0.35f + float(rand() % 150)/1000.0f; //[0.35;0.50]
       float y = float(rand() % 90)/100.0f - 0.45; //[-0.45;0.45]
       float z = -0.23f + (float(rand() % 230)/1000.0f); //[-0.23;0.00]
-      blocks_test.push_back(MetaBlock("BlockTest", x, y, z, -1,0,0,0, shape_msgs::SolidPrimitive::CYLINDER, block_size));
+      blocks_test.push_back(MetaBlock("BlockTest", x, y, z, -1,0,0,0, shape_msgs::SolidPrimitive::CYLINDER, block_size, block_size_r));
       msg_poses.poses.push_back(blocks_test.back().start_pose);
       ++count;
     }
@@ -378,6 +402,88 @@ namespace romeo_pick_place
           if (block_id >=0)
             resetBlock(&blocks[block_id]);
         }
+        //return the hand to the initial pose ------------------------------
+        else if ((actionName == "i1")) //key 'i1' //move to init pose
+        {
+          // Remove attached object and Remove collision object
+          if (block_id >=0)
+          {
+            visual_tools_->cleanupACO(blocks[block_id].name);
+            visual_tools_->cleanupCO(blocks[block_id].name);
+          }
+          std::vector<double> pose_arm_left;
+          pose_arm_left.resize(6, 0.0);
+          if (robot_name_ == "romeo")
+          {
+            pose_arm_left[0] = 1.0799225568771362;
+            pose_arm_left[1] = 0.6565437912940979;
+            pose_arm_left[2] = -0.8390874862670898;
+            pose_arm_left[3] = -0.607456386089325;
+            pose_arm_left[4] = -0.6672816872596741;
+            pose_arm_left[5] = 0.02454369328916073;
+          }
+
+          action->poseHand(&pose_arm_left);
+          if (block_id >=0)
+            resetBlock(&blocks[block_id]);
+        }
+        //return the hand to the initial pose ------------------------------
+        else if ((actionName == "i2")) //key 'i2' //move to init pose
+        {
+          // Remove attached object and Remove collision object
+          if (block_id >=0)
+          {
+            visual_tools_->cleanupACO(blocks[block_id].name);
+            visual_tools_->cleanupCO(blocks[block_id].name);
+          }
+          std::vector<double> pose_arm;
+          pose_arm.resize(6, 0.0);
+          if (robot_name_ == "romeo")
+          {
+            pose_arm[0] = 1.872990608215332;
+            pose_arm[1] = 0.5553010702133179;
+            pose_arm[2] = -1.9895731210708618;
+            pose_arm[3] = -1.052310824394226;
+            pose_arm[4] = -0.6703495979309082;
+            pose_arm[5] = 0.02147573232650757;
+          }
+
+          action->poseHand(&pose_arm);
+          if (block_id >=0)
+            resetBlock(&blocks[block_id]);
+        }
+        //return the hand to the initial pose ------------------------------
+        else if ((actionName == "i3")) //key 'i3' //move to init pose
+        {
+          // Remove attached object and Remove collision object
+          if (block_id >=0)
+          {
+            visual_tools_->cleanupACO(blocks[block_id].name);
+            visual_tools_->cleanupCO(blocks[block_id].name);
+          }
+          std::vector<double> pose_arm;
+          pose_arm.resize(6, 0.0);
+          if (robot_name_ == "romeo")
+          {
+            pose_arm[0] = 1.74;
+            pose_arm[1] = 0.75;
+            pose_arm[2] = -2.08;
+            pose_arm[3] = -1.15;
+            pose_arm[4] = -0.43;
+            pose_arm[5] = 0.17;
+
+            if (action->arm == "right")
+            {
+              pose_arm[1] *= -1;
+              pose_arm[2] *= -1;
+              pose_arm[3] *= -1;
+            }
+          }
+
+          action->poseHand(&pose_arm);
+          if (block_id >=0)
+            resetBlock(&blocks[block_id]);
+        }
         //exit
         else if ((actionDesired == 113) || (actionName == "q")) //key 'q' //quit the application
           break;
@@ -394,6 +500,20 @@ namespace romeo_pick_place
           block_id = 0;
           publishCollisionMetaBlock(&blocks.back());
         }
+        else if ((actionName == "l2")) //key 'l2' //clean and publish virtual for the left arm
+        {
+          removeObjects();
+          //updateObjectsVirtual();
+          geometry_msgs::Pose pose_default_temp(pose_default);
+          pose_default_temp.position.z -= 0.1;
+          blocks.push_back(MetaBlock("Virtual1", ros::Time::now(), pose_default_temp, shape_msgs::SolidPrimitive::CYLINDER, block_size));
+
+          msg_obj_pose.pose = blocks.back().start_pose;
+          pub_obj_pose.publish(msg_obj_pose);
+          block_id = 0;
+          publishCollisionMetaBlock(&blocks.back());
+        }
+
         else if ((actionDesired == 114) || (actionName == "r")) //key 'r' //clean and publish virtual for the right arm
         {
           removeObjects();
@@ -419,7 +539,52 @@ namespace romeo_pick_place
           {
             block_id = 0;
             for (std::vector<MetaBlock>::iterator block=blocks.begin(); block != blocks.end(); ++block)
-              visual_tools_->processCollisionObjectMsg(wrapToCollisionObject(&(*block)));
+            {
+              visual_tools_->cleanupCO(block->name);
+
+              //visual_tools_->processCollisionObjectMsg(wrapToCollisionObject(&(*block)));
+              moveit_msgs::CollisionObject msg = wrapToCollisionObject(&(*block));
+              //if (!msg.meshes.empty())
+               //{
+              if (!msg.primitive_poses.empty())
+                  ROS_INFO_STREAM("---- primitive_poses[0]" << msg.primitive_poses[0]);
+                visual_tools_->processCollisionObjectMsg(msg);
+              /*}
+              else
+              {
+                ROS_INFO_STREAM("----- " << block->start_pose);
+                publishCollisionMetaBlock(&(*block));
+              }*/
+            }
+          }
+          else
+            block_id = -1;
+        }
+        //dd continuous object detection
+        else if (actionName == "dd") //key 'dd' //detect objects
+        {
+          block_id = -1;
+          removeObjects();
+
+          ros::Time start_time = ros::Time::now();
+          while ((blocks.size() <= 0) && (ros::Time::now() - start_time < ros::Duration(15.0)))
+          {
+ROS_INFO_STREAM("**** object detection is running, objects detected  " << blocks.size() << " " << ros::Time::now());
+            objproc.triggerObjectDetection();
+          }
+
+          // publish all objects as collision blocks
+          if (blocks.size() > 0)
+          {
+            block_id = 0;
+            for (std::vector<MetaBlock>::iterator block=blocks.begin(); block != blocks.end(); ++block)
+            {
+              //visual_tools_->processCollisionObjectMsg(wrapToCollisionObject(&(*block)));
+              moveit_msgs::CollisionObject msg = wrapToCollisionObject(&(*block));
+              if (!msg.primitive_poses.empty())
+                  ROS_INFO_STREAM("---- primitive_poses[0]" << msg.primitive_poses[0]);
+                visual_tools_->processCollisionObjectMsg(msg);
+            }
           }
           else
             block_id = -1;
@@ -459,6 +624,10 @@ namespace romeo_pick_place
           action->reachAction(pose, SUPPORT_SURFACE3_NAME);
           resetBlock(&blocks[block_id]);
         }
+        else if ((block_id != -1) && ((actionDesired == 121) || (actionName == "b"))) //key 'b'
+        {
+          action->pickDefault(&blocks[block_id]);
+        }
         else if ((block_id != -1) && ((actionDesired == 119) || (actionName == "w"))) //key 'w' //reach the init pose
         {
           visual_tools_->cleanupCO(blocks[block_id].name);
@@ -492,8 +661,17 @@ namespace romeo_pick_place
           action->filterGrasps(&blocks[block_id]);
         else if ((actionDesired == 115) || (actionName == "s")) //key 's' //clean the scene
         {
-          cleanEnvironment(visual_tools_);
-          removeObjects();
+          if (env_shown_)
+          {
+            cleanEnvironment(visual_tools_);
+            env_shown_ = false;
+            removeObjects();
+          }
+          else
+          {
+            createEnvironment(visual_tools_);
+            env_shown_ = true;
+          }
         }
         else if ((actionDesired == 104) || (actionName == "h")) //key 'h'
         {
@@ -503,7 +681,7 @@ namespace romeo_pick_place
             hand_id = 0;
         }
         //moving the virtual objects
-        else if (actionDesired == 50) //down
+        else if ((actionDesired == 50) || (actionName == "down")) //down
         {
           if (blocks.size() > 0)
           {
@@ -513,7 +691,7 @@ namespace romeo_pick_place
             resetBlock(&blocks[block_id]);
           }
         }
-        else if (actionDesired == 52) //left
+        else if ((actionDesired == 52) || (actionName == "left")) //left
         {
           if (blocks.size() > 0)
           {
@@ -523,7 +701,7 @@ namespace romeo_pick_place
             resetBlock(&blocks[block_id]);
           }
         }
-        else if (actionDesired == 56) //up
+        else if ((actionDesired == 56) || (actionName == "up")) //up
         {
           if (blocks.size() > 0)
           {
@@ -533,7 +711,7 @@ namespace romeo_pick_place
             resetBlock(&blocks[block_id]);
           }
         }
-        else if (actionDesired == 54) //right
+        else if ((actionDesired == 54) || (actionName == "right")) //right
         {
           if (blocks.size() > 0)
           {
@@ -543,7 +721,7 @@ namespace romeo_pick_place
             resetBlock(&blocks[block_id]);
           }
         }
-        else if (actionDesired == 51) //farther
+        else if ((actionDesired == 51) || (actionName == "further")) //further
         {
           if (blocks.size() > 0)
           {
@@ -553,7 +731,7 @@ namespace romeo_pick_place
             resetBlock(&blocks[block_id]);
           }
         }
-        else if (actionDesired == 57) //closer
+        else if ((actionDesired == 57) || (actionName == "closer")) //closer
         {
           if (blocks.size() > 0)
           {
@@ -589,7 +767,7 @@ namespace romeo_pick_place
             ROS_INFO_STREAM_NAMED("pick_place_adv", "new object pose: " << blocks[0].start_pose);
           }
         }
-        else if ((actionDesired == 106) || (actionName == "j")) //key 'j', set teh tolerance
+        else if ((actionDesired == 106) || (actionName == "j")) //key 'j', set the tolerance
         {
           action->setTolerance(promptUserValue("Set the value: "));
         }
@@ -635,21 +813,25 @@ namespace romeo_pick_place
 
     object_recognition_msgs::GetObjectInformation obj_info;
     obj_info.request.type = block->type;
-    if (objproc.getMeshFromDB(obj_info))
+
+    /*if (objproc.getMeshFromDB(obj_info))
     {
       msg_obj_collision.meshes.push_back(obj_info.response.information.ground_truth_mesh);
       msg_obj_collision.mesh_poses.push_back(block->start_pose);
+ROS_INFO_STREAM("-- mesh found: msg_obj_collision.meshes.size()=" << msg_obj_collision.meshes.size());
     }
-    else
+    else*/
     {
       shape_msgs::SolidPrimitive msg_cylinder_;
       msg_cylinder_.type = shape_msgs::SolidPrimitive::CYLINDER;
       msg_cylinder_.dimensions.resize(shape_tools::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::CYLINDER>::value);
       msg_cylinder_.dimensions[shape_msgs::SolidPrimitive::CYLINDER_RADIUS] = block_size;
-      msg_cylinder_.dimensions[shape_msgs::SolidPrimitive::CONE_HEIGHT] = block_size*3.0;
+      msg_cylinder_.dimensions[shape_msgs::SolidPrimitive::CONE_HEIGHT] = block_size_r; //block_size*
 
       msg_obj_collision.primitives.push_back(msg_cylinder_);
+
       msg_obj_collision.primitive_poses.push_back(block->start_pose);
+//ROS_INFO_STREAM("-- mesh not found: " << block->start_pose);
     }
 
     msg_obj_collision.type = block->type;
@@ -675,7 +857,7 @@ namespace romeo_pick_place
       visual_tools_->publishCollisionBlock(block->start_pose, block->name, block_size);
       //visual_tools_->publishCollisionBlock(block->start_pose, block->name, block->shape.BOX_X);
     else if (block->shape.type == shape_msgs::SolidPrimitive::CYLINDER)
-      visual_tools_->publishCollisionCylinder(block->start_pose, block->name, block_size, block_size*3);
+      visual_tools_->publishCollisionCylinder(block->start_pose, block->name, block_size, block_size_r); //block_size*
       //visual_tools_->publishCollisionCylinder(block->start_pose, block->name, block->shape.CYLINDER_RADIUS, block->shape.CYLINDER_HEIGHT);
   }
 
@@ -686,26 +868,29 @@ namespace romeo_pick_place
     try {
       if (msg->meshes.size() > 0)
       {
-        //check if exists
-        int idx = -1;
-        for (int i=0; i<blocks.size(); ++i)
-          if (blocks[i].name == msg->id){
-            idx = i;
-            break;
+        geometry_msgs::Pose pose = msg->mesh_poses[0];
+        if ((pose.position.x < x_max) && (pose.position.x > x_min)
+            && (pose.position.z < z_max) && (pose.position.z > z_min))
+        {
+          //check if exists
+          int idx = -1;
+          for (int i=0; i<blocks.size(); ++i)
+            if (blocks[i].name == msg->id){
+              idx = i;
+              break;
+            }
+
+          //pose.position.z += 0.0576;
+          if ((idx == -1) || (idx >= blocks.size()) || (idx >= msg_obj_poses.poses.size())) //if not found, create a new one
+          {
+            blocks.push_back(MetaBlock(msg->id, msg->header.stamp, pose, msg->meshes.front(), msg->type));
+            msg_obj_poses.poses.push_back(pose);//blocks.back().start_pose);
           }
-        const geometry_msgs::Pose pose = msg->mesh_poses[0];
-        /*if ((pose.position.x >= 0.3) && (pose.position.x <= 0.55)
-            && (pose.position.y >= -0.45) && (pose.position.y <= 0.45)
-            && (pose.position.z >= -0.24) && (pose.position.z <= -0.05))*/
-        if ((idx == -1) || (idx >= blocks.size()) || (idx >= msg_obj_poses.poses.size())) //if not found, create a new one
-        {
-          blocks.push_back(MetaBlock(msg->id, msg->header.stamp, pose, msg->meshes.front(), msg->type));
-          msg_obj_poses.poses.push_back(blocks.back().start_pose);
-        }
-        else if ((idx >= 0) && (idx < blocks.size()))
-        {
-          blocks[idx].updatePose(pose);
-          msg_obj_poses.poses[idx] = blocks.back().start_pose;
+          else if ((idx >= 0) && (idx < blocks.size()))
+          {
+            blocks[idx].updatePose(pose);
+            msg_obj_poses.poses[idx] = pose; //blocks.back().start_pose; //
+          }
         }
       }
     }

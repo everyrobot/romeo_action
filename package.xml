@@ -1,5 +1,5 @@
 <package>
-  <name>romeo_pick_place_adv</name>
+  <name>pick_place_moveit</name>
   <version>0.3.0</version>
   <description>Code for running MoveIt pick and place</description>
 

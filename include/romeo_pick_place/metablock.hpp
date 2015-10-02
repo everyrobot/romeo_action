@@ -21,7 +21,8 @@ public:
             const double orien_z,
             const double orien_w,
             const uint shapeType,
-            const double size);
+            const double size,
+            const double size_r);
   MetaBlock(const std::string name,
             const ros::Time timestamp,
             const geometry_msgs::Pose start_pose,

@@ -42,6 +42,13 @@ public:
   const bool saveStat_;
   std::string base_frame;
   double block_size;
+  double block_size_r;
+
+  bool env_shown_;
+  double x_min;
+  double x_max;
+  double z_min;
+  double z_max;
 
   Action *action_left, *action_right;
   //Posture posture;

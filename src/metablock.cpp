@@ -11,10 +11,11 @@ MetaBlock::MetaBlock(const std::string name,
           const double orien_z,
           const double orien_w,
           const uint shapeType,
-          const double size)
+          const double size,
+          const double size_r)
 {
   this->name = name;
-  this->size = size*3.0;
+  this->size = size*size_r;
 
   //set position
   start_pose.position.x = start_x;
@@ -40,7 +41,7 @@ MetaBlock::MetaBlock(const std::string name,
     shape_msgs::SolidPrimitive shapeCylinder;
     shapeCylinder.type = shape_msgs::SolidPrimitive::CYLINDER;
     shapeCylinder.dimensions.resize(shape_tools::SolidPrimitiveDimCount<shape_msgs::SolidPrimitive::CYLINDER>::value);
-    shapeCylinder.dimensions[shape_msgs::SolidPrimitive::CYLINDER_HEIGHT] = size*3;
+    shapeCylinder.dimensions[shape_msgs::SolidPrimitive::CYLINDER_HEIGHT] = size*size_r;
     shapeCylinder.dimensions[shape_msgs::SolidPrimitive::CYLINDER_RADIUS] = size;
     this->shape = shapeCylinder;
   }
