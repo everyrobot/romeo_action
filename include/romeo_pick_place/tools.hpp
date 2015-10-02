@@ -81,6 +81,7 @@
 
                           << " test_pick - test the goal space for picking, \n"
                           << " test_reach - test the goal space for reaching, \n"
+                          << " stat - print statistics on successfull grasps, \n"
 
                           << " l - remove all objects and create a virtual object for the left hand, \n"
                           << " r - remove all objects and create a virtual object for the right hand, \n"

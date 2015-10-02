@@ -49,7 +49,7 @@ set(SRC
   src/action.cpp
   src/postures.cpp
   src/objprocessing.cpp
-  src/actionclient.cpp
+  #src/actionclient.cpp
   src/grasp_filter.cpp
   include/romeo_pick_place/simplepickplace.hpp
   include/romeo_pick_place/metablock.hpp

@@ -70,6 +70,8 @@ public:
   std::vector<geometry_msgs::Pose> poses_failed;
 
   geometry_msgs::Pose pose_default, pose_default_r;
+
+  std::vector <geometry_msgs::Pose> stat_poses_success;
 };
 }
 

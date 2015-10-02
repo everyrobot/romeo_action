@@ -136,7 +136,7 @@ namespace romeo_pick_place
 
     ROS_INFO_STREAM_NAMED("pick_place"," Generating goals in the target space");
 
-    double step = 0.04;
+    double step = 0.01; //0.04;
     if (robot_name_ == "nao")
     {
       step = 0.03;
@@ -156,7 +156,7 @@ namespace romeo_pick_place
 
     int count = 0;
     //for (double y=-0.3; y<=-0.3; y+=0.1)
-    for (double y=-0.2; y<=0.2; y+=step*2.0)
+    for (double y=-0.2; y<=0.2; y+=step)//*2.0
       for (double z=z_min; z<=z_max; z+=step)
         for (double x=x_min; x<=x_max; x+=step)
         {
@@ -362,6 +362,7 @@ namespace romeo_pick_place
         {
           if(action->pickAction(&blocks[block_id], SUPPORT_SURFACE3_NAME))
           {
+            stat_poses_success.push_back(blocks[block_id].start_pose);
             //actionState += 2; //approach to object and grasp
           }
         }
@@ -775,6 +776,16 @@ ROS_INFO_STREAM("**** object detection is running, objects detected  " << blocks
           action->poseHeadDown();
         else if ((actionDesired == 107) || (actionName == "k")) //key 'k', move the head to zero
           action->poseHeadZero();
+        else if (actionName == "stat") //key 'stat', print the statistics on grasps
+        {
+            //stat_poses_success[0].position.x;
+          for (std::vector <geometry_msgs::Pose>::iterator it = stat_poses_success.begin(); it != stat_poses_success.end(); ++it)
+          {
+            ROS_INFO_STREAM("Successfully grasped objects at the following locations: ");
+            ROS_INFO_STREAM(" [" <<  it-> position.x << " " << it->position.y << " " << it->position.z << "] ["
+                            << it->orientation.x << " " << it->orientation.y << " " << it->orientation.z << " " << it->orientation.w);
+          }
+        }
       }
 
       if ((actionDesired == 113) || (actionName == "q"))
