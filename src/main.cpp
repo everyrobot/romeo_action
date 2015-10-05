@@ -40,15 +40,18 @@
 #include <boost/program_options.hpp>
 #include <romeo_pick_place/simplepickplace.hpp>
 
-void parse_command_line(int argc, char ** argv, std::string &robot_name_, bool &verbose_)
+void parse_command_line(int argc, char ** argv, std::string &robot_name_, double &test_step_, bool &verbose_)
 {
   std::string robot_name;
+  double test_step;
   bool verbose;
   boost::program_options::options_description desc("Configuration");
   desc.add_options()
     ("help", "show this help message")
     ("robot_name", boost::program_options::value<std::string>(&robot_name)->default_value(robot_name_),
      "robot_name")
+    ("test_step", boost::program_options::value<double>(&test_step)->default_value(test_step_),
+     "test_step")
     ("verbose", boost::program_options::value<bool>(&verbose)->default_value(verbose_),
      "verbose")
     /*("depth_frame_id", boost::program_options::value<std::string>(&depth_frame_id)->default_value(m_depth_frame_id),
@@ -58,6 +61,7 @@ void parse_command_line(int argc, char ** argv, std::string &robot_name_, bool &
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
   boost::program_options::notify(vm);
   robot_name_ = vm["robot_name"].as<std::string>();
+  test_step_ = vm["test_step"].as<double>();
   verbose_ = vm["verbose"].as<bool>();
   ROS_INFO_STREAM("robot name is " << robot_name_);
 
@@ -89,12 +93,13 @@ int main(int argc, char **argv)
   //verbose = true;
 
   std::string robot_name("romeo");
-  parse_command_line(argc, argv, robot_name, verbose);
+  double test_step(0.0);
+  parse_command_line(argc, argv, robot_name, test_step, verbose);
 
   srand (time(NULL));
 
   // Start the pick place node
-  romeo_pick_place::SimplePickPlace server(robot_name, verbose);
+  romeo_pick_place::SimplePickPlace server(robot_name, test_step, verbose);
 
   ROS_INFO_STREAM_NAMED("main", "Shutting down.");
   ros::shutdown();

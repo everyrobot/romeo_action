@@ -16,11 +16,12 @@ namespace romeo_pick_place
     *pose2 = temp;
   }
 
-  SimplePickPlace::SimplePickPlace(const std::string robot_name, const bool verbose)
+  SimplePickPlace::SimplePickPlace(const std::string robot_name, const double test_step, const bool verbose)
     :
       nh_("~"),
       nh_priv_(""),
       robot_name_(robot_name),
+      test_step_(test_step),
       verbose_(verbose),
       saveStat_(true),
       base_frame("odom"), //base_link
@@ -136,10 +137,11 @@ namespace romeo_pick_place
 
     ROS_INFO_STREAM_NAMED("pick_place"," Generating goals in the target space");
 
-    double step = 0.01; //0.04;
+    double step(test_step_);
     if (robot_name_ == "nao")
     {
-      step = 0.03;
+      if (step <= 0.0)
+        step = 0.03;
       x_min = 0.1; //0.3;
       x_max = 0.21;
       z_min = -0.07;
@@ -147,16 +149,22 @@ namespace romeo_pick_place
     }
     else if (robot_name_ == "pepper")
     {
-      step = 0.04;
+      if (step <= 0.0)
+        step = 0.04;
       x_min = 0.2; //0.3;
       x_max = 0.4;
       z_min = -0.13;
       z_max = 0.0;
     }
+    else if (robot_name_ == "romeo")
+    {
+      if (step <= 0.0)
+        step = 0.02; //0.04;
+    }
 
     int count = 0;
     //for (double y=-0.3; y<=-0.3; y+=0.1)
-    for (double y=-0.2; y<=0.2; y+=step)//*2.0
+    for (double y=-0.2; y<=0.2; y+=step*1.5)
       for (double z=z_min; z<=z_max; z+=step)
         for (double x=x_min; x<=x_max; x+=step)
         {

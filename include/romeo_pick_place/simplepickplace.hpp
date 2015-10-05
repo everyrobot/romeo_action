@@ -17,7 +17,7 @@ namespace romeo_pick_place
 class SimplePickPlace
 {
 public:
-  SimplePickPlace(const std::string robot_name, const bool verbose);
+  SimplePickPlace(const std::string robot_name, const double test_step, const bool verbose);
   bool startRoutine();
 
   void testReachablePoses(const bool pickVsReach=true, bool test_poses_rnd=false);
@@ -38,6 +38,7 @@ public:
   ros::NodeHandle nh_, nh_priv_;
 
   std::string robot_name_;
+  double test_step_;
   const bool verbose_;
   const bool saveStat_;
   std::string base_frame;
